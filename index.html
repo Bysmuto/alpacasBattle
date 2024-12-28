@@ -18,51 +18,62 @@
     <br /><br />
     <button id="addMusic">adicionar Musicas</button>
 
-    <script>
-      const fullList = [
-        "https://www.youtube.com/watch?v=h3oDa3mRVKY",
-        "https://www.youtube.com/watch?v=zZJcXSh0rqI",
-        "https://www.youtube.com/watch?v=QfvBN1KX_UM",
-        "https://www.youtube.com/watch?v=hxOY0Kn4Snk",
-        "https://www.youtube.com/watch?v=nCWtflan6fY",
-        "https://youtu.be/dsCklARUcXk",
-        "https://youtu.be/D1FcYknxEY0",
-      ];
-      const chave = "AIzaSyAcM3fuIbRmXAPVUAsbi7wpywukclOu2a0";
+    <script type="module">
+      // external config
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        get,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
-      //HTML
+      const firebaseConfig = {
+        apiKey: "AIzaSyBTL8WPwcuTKlkWOCVQBSuZWfAVwZ-gJk8",
+        authDomain: "alpacasbattle.firebaseapp.com",
+        projectId: "alpacasbattle",
+        storageBucket: "alpacasbattle.firebasestorage.app",
+        messagingSenderId: "857337327051",
+        appId: "1:857337327051:web:30affc0c4cdf2eccf55a4e",
+      };
+
+      const ytk = "AIzaSyAcM3fuIbRmXAPVUAsbi7wpywukclOu2a0";
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      // HTML elements
       const fullGame = document.querySelector("#fullGame");
       const mediumGame = document.querySelector("#mediumGame");
       const quickGame = document.querySelector("#quickGame");
 
       const gamePage = `
         <div class="container">
-          <iframe id="video1" loading="eager" src="" allowfullscreen></iframe>
-           <div class="videoTitle" id='videoTitle1'></div>
+          <iframe id="video1" loading="lazy" src="" allowfullscreen></iframe>
+          <div class="videoTitle" id='videoTitle1'></div>
           <button id="vote1">Vote Video 1</button><br />
-          <iframe id="video2" loading="eager" src="" allowfullscreen></iframe>
+          <iframe id="video2" loading="lazy" src="" allowfullscreen></iframe>
           <div class="videoTitle" id='videoTitle2'></div>
           <button id="vote2">Vote Video 2</button><br />
         </div>
       `;
 
       const winnerPage = `
-            <div>
-              <div class="videoTitle" id='videoTitleWinner'></div>
-              <iframe id='winner' src="" allowfullscreen></iframe>
-              <button id="reset" onclick="location.reload()">Reset</button>
-            </div>
-          `;
-
-      const notEnoughVideosPage = `
-        <div class="container">
-          <h1>Sem musicas suficientes</h1>
-          <button id="addMusic">adicionar Musicas</button>
+        <div>
+          <div class="videoTitle" id='videoTitleWinner'></div>
+          <iframe id='winner' src="" allowfullscreen></iframe>
           <button id="reset" onclick="location.reload()">Reset</button>
         </div>
       `;
 
-      //utility funcs
+      const notEnoughVideosPage = `
+        <div class="container">
+          <h1>Sem músicas suficientes</h1>
+          <button id="addMusic">Adicionar músicas</button>
+          <button id="reset" onclick="location.reload()">Reset</button>
+        </div>
+      `;
+
+      // utility functions
       function sliceList(list, fraction) {
         return list
           .sort(() => Math.random() - 0.5)
@@ -79,16 +90,15 @@
 
       async function getVideoTitle(videoId) {
         const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${chave}&part=snippet`
+          `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${ytk}&part=snippet`
         );
         const data = await response.json();
-
         return data.items[0].snippet.title;
       }
 
       function getVideoId(url) {
         const regex =
-          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|.+\?v=)|youtu\.be\/)([^&\s]+)/;
+          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:.*[?&]v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
         const videoId = url.match(regex)[1];
         return videoId;
       }
@@ -101,73 +111,82 @@
         });
       }
 
-      //game modes
-      fullGame.addEventListener("click", () =>
-        startGame(sliceList(videoIdsList, 1))
-      );
-      mediumGame.addEventListener("click", () =>
-        startGame(sliceList(videoIdsList, 0.5))
-      );
-      quickGame.addEventListener("click", () =>
-        startGame(sliceList(videoIdsList, 0.25))
-      );
+      // Fetch data from Firebase
+      get(ref(database, "videos")).then((snapshot) => {
+        if (snapshot.exists()) {
+          const videos = snapshot.val();
 
-      //starting game
-      const videoIdsList = fullList.map(getVideoId);
+          const videosIdsList = videos.map(getVideoId);
 
-      function startGame(playingList) {
-        const enoughVideos = playingList.length >= 2;
-        if (enoughVideos) {
-          //HTML
-          document.body.innerHTML = gamePage;
+          // Game modes
+          fullGame.addEventListener("click", () =>
+            startGame(sliceList(videosIdsList, 1))
+          );
+          mediumGame.addEventListener("click", () =>
+            startGame(sliceList(videosIdsList, 0.3))
+          );
+          quickGame.addEventListener("click", () =>
+            startGame(sliceList(videosIdsList, 0.15))
+          );
 
-          const video1 = document.querySelector("#video1");
-          const video2 = document.querySelector("#video2");
-          const videoTitle1 = document.querySelector("#videoTitle1");
-          const videoTitle2 = document.querySelector("#videoTitle2");
-          const vote1 = document.querySelector("#vote1");
-          const vote2 = document.querySelector("#vote2");
+          //  game logic
+          function startGame(playingList) {
+            const enoughVideos = playingList.length >= 2;
+            if (enoughVideos) {
+              // HTML
+              document.body.innerHTML = gamePage;
 
-          function setVideos() {
-            const winner = playingList.length === 1;
-            if (winner) {
-              document.body.innerHTML = winnerPage;
-              const winner = document.querySelector("#winner");
-              const winnerTitle = document.querySelector("#videoTitleWinner");
+              const video1 = document.querySelector("#video1");
+              const video2 = document.querySelector("#video2");
+              const videoTitle1 = document.querySelector("#videoTitle1");
+              const videoTitle2 = document.querySelector("#videoTitle2");
+              const vote1 = document.querySelector("#vote1");
+              const vote2 = document.querySelector("#vote2");
 
-              winner.src = `https://www.youtube.com/embed/${playingList[0]}`;
+              function setVideos() {
+                console.log(playingList);
+                if (playingList.length === 1) {
+                  document.body.innerHTML = winnerPage;
+                  const winner = document.querySelector("#winner");
+                  const winnerTitle =
+                    document.querySelector("#videoTitleWinner");
 
-              displayTitle(playingList[0], winnerTitle);
-              return;
+                  winner.src = `https://www.youtube.com/embed/${playingList[0]}`;
+                  displayTitle(playingList[0], winnerTitle);
+                  return;
+                }
+
+                const firstIndex = getRandomIndex(-1, playingList);
+                const secondIndex = getRandomIndex(firstIndex, playingList);
+
+                video1.src = `https://www.youtube.com/embed/${playingList[firstIndex]}?autoplay=0&controls=0&rel=0&showinfo=0`;
+                video2.src = `https://www.youtube.com/embed/${playingList[secondIndex]}?autoplay=0&controls=0&rel=0&showinfo=0`;
+
+                displayTitle(playingList[firstIndex], videoTitle1);
+                displayTitle(playingList[secondIndex], videoTitle2);
+              }
+
+              // vote
+              function vote(videoToRemove) {
+                setTimeout(() => {
+                  playingList = playingList.filter(
+                    (video) => video !== getVideoId(videoToRemove.src)
+                  );
+                  setVideos();
+                }, 200);
+              }
+
+              vote1.addEventListener("click", () => vote(video2));
+              vote2.addEventListener("click", () => vote(video1));
+
+              // start
+              setVideos();
+            } else {
+              document.body.innerHTML = notEnoughVideosPage;
             }
-
-            const firstIndex = getRandomIndex(-1, playingList);
-            const secondIndex = getRandomIndex(firstIndex, playingList);
-
-            video1.src = `https://www.youtube.com/embed/${playingList[firstIndex]}`;
-            video2.src = `https://www.youtube.com/embed/${playingList[secondIndex]}`;
-
-            displayTitle(playingList[firstIndex], videoTitle1);
-            displayTitle(playingList[secondIndex], videoTitle2);
           }
-
-          //vote
-          function vote(videoToRemove) {
-            playingList = playingList.filter(
-              (video) => video !== getVideoId(videoToRemove.src)
-            );
-            setVideos();
-          }
-
-          vote1.addEventListener("click", () => vote(video2));
-          vote2.addEventListener("click", () => vote(video1));
-
-          //start
-          setVideos();
-        } else {
-          document.body.innerHTML = notEnoughVideosPage;
         }
-      }
+      });
     </script>
   </body>
 </html>
