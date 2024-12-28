@@ -8,7 +8,7 @@
   </head>
   <body>
     <h1>Alpacas Music Battle</h1>
-    
+
     <h2>modo:</h2>
     <div id="video_title"></div>
     <button id="fullGame">Masoquista</button>
@@ -21,7 +21,15 @@
       const fullList = [
         "https://www.youtube.com/watch?v=h3oDa3mRVKY",
         "https://www.youtube.com/watch?v=zZJcXSh0rqI",
+        "https://www.youtube.com/watch?v=QfvBN1KX_UM",
+        "https://www.youtube.com/watch?v=hxOY0Kn4Snk",
+        "https://www.youtube.com/watch?v=nCWtflan6fY",
       ];
+
+
+      const videoIds = fullList.map(getVideoId);
+
+
 
       const fullGame = document.querySelector("#fullGame");
       const mediumGame = document.querySelector("#mediumGame");
@@ -31,10 +39,11 @@
 
       function getVideoId(url) {
         const regex =
-          /(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:watch\?v=|embed\/|v\/|.+\?v=)?([^&\s]+)/;
+          /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|.+\?v=)|youtu\.be\/)([^&\s]+)/;
         const videoId = url.match(regex)[1];
         return videoId;
       }
+ 
 
       async function getVideoTitle(videoId) {
         const response = await fetch(
@@ -71,13 +80,13 @@
       `;
 
       fullGame.addEventListener("click", () =>
-        startGame(sliceList(fullList, 1))
+        startGame(sliceList(videoIds, 1))
       );
       mediumGame.addEventListener("click", () =>
-        startGame(sliceList(fullList, 0.5))
+        startGame(sliceList(videoIds, 0.5))
       );
       quickGame.addEventListener("click", () =>
-        startGame(sliceList(fullList, 0.25))
+        startGame(sliceList(videoIds, 0.25))
       );
 
       function sliceList(list, fraction) {
@@ -88,7 +97,14 @@
 
       function startGame(playingList) {
         if (playingList.length >= 2) {
+
+
+
           console.log(playingList);
+
+
+          
+
           document.body.innerHTML = gamePage;
 
           const video1 = document.querySelector("#video1");
@@ -105,6 +121,7 @@
           }
 
           function setVideos() {
+            console.log(playingList);
             if (playingList.length === 1) {
               displayWinner();
               return;
@@ -113,29 +130,19 @@
             const firstIndex = getRandomIndex();
             const secondIndex = getRandomIndex(firstIndex);
 
-            console.log(
-              `https://www.youtube.com/embed/${getVideoId(
-                playingList[firstIndex]
-              )}`
-            );
-
-            video1.src = `https://www.youtube.com/embed/${getVideoId(
-              playingList[firstIndex]
-            )}`;
-            video2.src = `https://www.youtube.com/embed/${getVideoId(
-              playingList[secondIndex]
-            )}`;
+            video1.src = `https://www.youtube.com/embed/${playingList[firstIndex]}`;
+            video2.src = `https://www.youtube.com/embed/${playingList[secondIndex]}`;
           }
 
           function displayWinner() {
             document.body.innerHTML = winnerPage;
             const winner = document.querySelector("#winner");
-            winner.src = playingList[0];
+            winner.src = `https://www.youtube.com/embed/${playingList[0]}`; 
           }
 
           function vote(videoToRemove) {
             playingList = playingList.filter(
-              (video) => video !== videoToRemove.src
+              (video) => video !== getVideoId(videoToRemove.src) 
             );
             setVideos();
           }
