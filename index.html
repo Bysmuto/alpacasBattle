@@ -4,27 +4,182 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alpacas Music Battle</title>
-    <style></style>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap");
+
+      * {
+        font-family: "Pixelify Sans", serif;
+        color: rgb(196, 12, 89);
+        border-radius: 20px;
+      }
+
+      body {
+        margin: 0;
+        background-color: rgb(14, 9, 61);
+      }
+      .menuContainer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      h1 {
+        font-size: 5rem;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+      .buttonsContainer button {
+        font-size: 2rem;
+        padding: 0.5rem;
+        margin: 0.5rem;
+      }
+      .addMusicContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        margin: 0.5rem;
+      }
+
+      .addMusicContainer * {
+        padding: 0.5rem;
+      }
+
+      .gameContainer {
+        display: flex;
+        flex-direction: column;
+        /* align-items: center;
+        justify-content: space-evenly; */
+        height: 100vh;
+      }
+
+      #c2 {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-evenly;
+      }
+      .gameContainer iframe {
+        width: 40vw;
+        height: 300px;
+      }
+
+      .videoTitle {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        font-size: 1.5rem;
+
+        max-width: 40vw;
+        margin: 0.5rem;
+      }
+
+      .videoContainer {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+      }
+      #winnerContainer h1 {
+        font-size: 3rem;
+        margin: 0.5rem;
+      }
+      .voteButton {
+        padding: 0.5rem;
+        font-size: 1.5rem;
+      }
+      #roundNumber {
+        text-align: center;
+      }
+    </style>
   </head>
   <body>
-    <h1>Alpacas Music Battle</h1>
+    <div class="menuContainer">
+      <h1>Alpacas Music Battle</h1>
 
-    <h2>modo:</h2>
-
-    <div id="video_title"></div>
-    <button id="fullGame">Masoquista</button>
-    <button id="mediumGame">Normal</button>
-    <button id="quickGame">Precoce</button>
-    <br /><br />
-    <button id="addMusic">adicionar Musicas</button>
-
+      <h2>modo de jogo:</h2>
+      <div class="buttonsContainer">
+        <button class="menuButtons" id="fullGame">Masoquista</button>
+        <button id="normalGame">Normal</button>
+        <button id="quickGame">Precoce</button>
+      </div>
+      <div class="addMusicContainer">
+        <h2>adicionar musicas:</h2>
+        <input type="text" id="linkToSend" placeholder="Link do video" />
+        <button id="addMusic">adcionar</button>
+      </div>
+    </div>
     <script type="module">
+      // HTML elements
+      const gamePage = `
+
+        <div class="gameContainer">
+
+          <div class="colunm" id='c1'>
+              <h2 id='roundNumber'>Rodada X</h2>
+          </div>
+          <div class="colunm" id='c2'>
+            <div class="videoContainer" >
+                <iframe class='videosFrames' id="video1" loading="lazy" src="" allowfullscreen></iframe>
+                <div class="videoTitle" id='videoTitle1'></div>
+                <button class='voteButton'id="vote1">Votar</button>
+              </div>
+
+              <div class="videoContainer">
+                <iframe id="video2" loading="lazy" src="" allowfullscreen></iframe>
+                <div class="videoTitle" id='videoTitle2'></div>
+                <button class='voteButton' id="vote2">Votar</button>
+              </div>
+           </div>
+
+          </div>
+      `;
+
+      const winnerPage = `
+
+       <div class="gameContainer">
+
+          <div class="videoContainer" id='winnerContainer'>
+              <h1>E o vencedor(a)(e) é :</h1>
+            <iframe class='videosFrames' id="winner" loading="lazy" src="" allowfullscreen  allow="autoplay; fullscreen" ></iframe>
+            <div class="videoTitle" id='videoTitleWinner'></div>
+            <button class='voteButton'id="reset" onclick="location.reload()">Reset</button>
+
+            </div>
+
+        </div>
+
+
+      `;
+
+      const notEnoughVideosPage = `
+        <div class="container">
+          <h1>Sem músicas suficientes</h1>
+          <button id="addMusic">Adicionar músicas</button>
+          <button id="reset" onclick="location.reload()">Reset</button>
+        </div>
+      `;
+
+      const fullGame = document.querySelector("#fullGame");
+      const normalGame = document.querySelector("#normalGame");
+      const quickGame = document.querySelector("#quickGame");
+
+      const addMusic = document.querySelector("#addMusic");
+      const linkToSend = document.querySelector("#linkToSend");
+
       // external config
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
       import {
         getDatabase,
         ref,
         get,
+        push,
+        set,
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
       const firebaseConfig = {
@@ -40,40 +195,23 @@
 
       const app = initializeApp(firebaseConfig);
       const database = getDatabase(app);
-
-      // HTML elements
-      const fullGame = document.querySelector("#fullGame");
-      const mediumGame = document.querySelector("#mediumGame");
-      const quickGame = document.querySelector("#quickGame");
-
-      const gamePage = `
-        <div class="container">
-          <iframe id="video1" loading="lazy" src="" allowfullscreen></iframe>
-          <div class="videoTitle" id='videoTitle1'></div>
-          <button id="vote1">Vote Video 1</button><br />
-          <iframe id="video2" loading="lazy" src="" allowfullscreen></iframe>
-          <div class="videoTitle" id='videoTitle2'></div>
-          <button id="vote2">Vote Video 2</button><br />
-        </div>
-      `;
-
-      const winnerPage = `
-        <div>
-          <div class="videoTitle" id='videoTitleWinner'></div>
-          <iframe id='winner' src="" allowfullscreen></iframe>
-          <button id="reset" onclick="location.reload()">Reset</button>
-        </div>
-      `;
-
-      const notEnoughVideosPage = `
-        <div class="container">
-          <h1>Sem músicas suficientes</h1>
-          <button id="addMusic">Adicionar músicas</button>
-          <button id="reset" onclick="location.reload()">Reset</button>
-        </div>
-      `;
+      const deRef = ref(database, "videos");
 
       // utility functions
+
+      function playSound(sound) {
+        if (sound === "normal") {
+          const audio = new Audio("som.wav");
+          audio.play();
+        }
+        if (sound === "win") {
+          const audio = new Audio("win.wav");
+          audio.play();
+        }
+
+
+      }
+
       function sliceList(list, fraction) {
         return list
           .sort(() => Math.random() - 0.5)
@@ -88,12 +226,10 @@
         return randomIndex;
       }
 
-      async function getVideoTitle(videoId) {
-        const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${ytk}&part=snippet`
-        );
-        const data = await response.json();
-        return data.items[0].snippet.title;
+      function isYtLink(url) {
+        const youtubeRegex =
+          /^(https?:\/\/)?(www\.)?(youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S+)?$/;
+        return youtubeRegex.test(url);
       }
 
       function getVideoId(url) {
@@ -111,26 +247,52 @@
         });
       }
 
+      function sendToFirebase(link) {
+        const sendToFirebase = push(deRef);
+        set(sendToFirebase, link);
+      }
+
+      async function getVideoTitle(videoId) {
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${ytk}&part=snippet`
+        );
+        const data = await response.json();
+        return data.items[0].snippet.title;
+      }
+
+      //config
+
+      const amountQuick = 0.15;
+      const amountNormal = 0.4;
+      const amountFull = 1;
+
+      const timerQuick = 30000;
+
       // Fetch data from Firebase
       get(ref(database, "videos")).then((snapshot) => {
         if (snapshot.exists()) {
           const videos = snapshot.val();
 
-          const videosIdsList = videos.map(getVideoId);
+          const videosIdsList = [
+            ...new Set(Object.values(videos).map(getVideoId)),
+          ];
+          console.log(videosIdsList);
 
           // Game modes
           fullGame.addEventListener("click", () =>
-            startGame(sliceList(videosIdsList, 1))
+            startGame(sliceList(videosIdsList, amountFull))
           );
-          mediumGame.addEventListener("click", () =>
-            startGame(sliceList(videosIdsList, 0.3))
+          normalGame.addEventListener("click", () =>
+            startGame(sliceList(videosIdsList, amountNormal))
           );
           quickGame.addEventListener("click", () =>
-            startGame(sliceList(videosIdsList, 0.15))
+            startGame(sliceList(videosIdsList, amountQuick), timerQuick)
           );
 
           //  game logic
-          function startGame(playingList) {
+
+          let round = 1;
+          function startGame(playingList, timer) {
             const enoughVideos = playingList.length >= 2;
             if (enoughVideos) {
               // HTML
@@ -142,26 +304,28 @@
               const videoTitle2 = document.querySelector("#videoTitle2");
               const vote1 = document.querySelector("#vote1");
               const vote2 = document.querySelector("#vote2");
+              const roundNumber = document.querySelector("#roundNumber");
 
               function setVideos() {
                 console.log(playingList);
-                if (playingList.length === 1) {
+                if (playingList.length === 1) {playSound('win');
                   document.body.innerHTML = winnerPage;
+                  
                   const winner = document.querySelector("#winner");
                   const winnerTitle =
                     document.querySelector("#videoTitleWinner");
 
-                  winner.src = `https://www.youtube.com/embed/${playingList[0]}`;
+                  winner.src = `https://www.youtube.com/embed/${playingList[0]}?autoplay=1`;
                   displayTitle(playingList[0], winnerTitle);
                   return;
                 }
+                roundNumber.innerHTML = `Rodada ${round}`;
 
                 const firstIndex = getRandomIndex(-1, playingList);
                 const secondIndex = getRandomIndex(firstIndex, playingList);
 
-                video1.src = `https://www.youtube.com/embed/${playingList[firstIndex]}?autoplay=0&controls=0&rel=0&showinfo=0`;
-                video2.src = `https://www.youtube.com/embed/${playingList[secondIndex]}?autoplay=0&controls=0&rel=0&showinfo=0`;
-
+                video1.src = `https://www.youtube.com/embed/${playingList[firstIndex]}?autoplay=0&controls=0&rel=0&showinfo=0&modestbranding=1`;
+                video2.src = `https://www.youtube.com/embed/${playingList[secondIndex]}?autoplay=0&controls=0&rel=0&showinfo=0&modestbranding=1`;
                 displayTitle(playingList[firstIndex], videoTitle1);
                 displayTitle(playingList[secondIndex], videoTitle2);
               }
@@ -169,10 +333,12 @@
               // vote
               function vote(videoToRemove) {
                 setTimeout(() => {
+                  round += 1;
                   playingList = playingList.filter(
                     (video) => video !== getVideoId(videoToRemove.src)
                   );
                   setVideos();
+                  playSound("normal");
                 }, 200);
               }
 
@@ -181,11 +347,29 @@
 
               // start
               setVideos();
+              //quick mode
+              if (timer != null) {
+                let votes = [video1, video2];
+                let pickId = Math.floor(Math.random() * votes.length);
+
+                setInterval(() => {
+                  vote(votes[pickId]);
+                }, timer);
+              }
             } else {
               document.body.innerHTML = notEnoughVideosPage;
             }
           }
         }
+      });
+
+      //add music
+      addMusic.addEventListener("click", () => {
+        if (isYtLink(linkToSend.value)) {
+          sendToFirebase(linkToSend.value);
+          linkToSend.value = "";
+        } else alert("OH krl é só pra links do youtube");
+        linkToSend.value = "";
       });
     </script>
   </body>
