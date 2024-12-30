@@ -208,8 +208,6 @@
           const audio = new Audio("win.wav");
           audio.play();
         }
-
-
       }
 
       function sliceList(list, fraction) {
@@ -250,6 +248,19 @@
       function sendToFirebase(link) {
         const sendToFirebase = push(deRef);
         set(sendToFirebase, link);
+      }
+
+      function sendArrayToFirebase(array) {
+        let index = 0;
+        const interval = setInterval(() => {
+          if (index < array.length) {
+            sendToFirebase(array[index]);
+            index++;
+            console.log("sended number:", index, array[index]);
+          } else {
+            clearInterval(interval); // Stop the interval when done
+          }
+        }, 2000); // 1 second interval
       }
 
       async function getVideoTitle(videoId) {
@@ -308,9 +319,10 @@
 
               function setVideos() {
                 console.log(playingList);
-                if (playingList.length === 1) {playSound('win');
+                if (playingList.length === 1) {
+                  playSound("win");
                   document.body.innerHTML = winnerPage;
-                  
+
                   const winner = document.querySelector("#winner");
                   const winnerTitle =
                     document.querySelector("#videoTitleWinner");
